@@ -16,7 +16,7 @@ for d in [RAW_DIR, PROCESSED_DIR, CACHE_DIR, OUTPUTS_DIR, MODELS_DIR, PLOTS_DIR,
     d.mkdir(parents=True, exist_ok=True)
 
 # ── Seasons ─────────────────────────────────────────────────────────────────
-SEASONS        = list(range(2010, 2026))   # 2018–2025 for training
+SEASONS        = list(range(2010, 2027))   # 2018–2025 for training
 PREDICT_SEASON = 2026
 
 # ── Regulation eras ─────────────────────────────────────────────────────────
