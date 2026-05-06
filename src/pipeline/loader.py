@@ -147,7 +147,7 @@ class RaceParser:
                 "driver":           driver,
                 "driver_full":      row.get("FullName", ""),
                 "team":             row.get("TeamName", ""),
-                "grid_position":    int(row.get("GridPosition", 0) or 0),
+                "grid_position":    int(row.get("GridPosition") or 0) if pd.notna(row.get("GridPosition")) else 0,
                 "finish_position":  finish_pos,
                 "status":           status,
                 "dnf":              dnf,
