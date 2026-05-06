@@ -1,11 +1,12 @@
 # src/pipeline/loader.py
 import time
+import signal
 import warnings
 from pathlib import Path
 from typing import Optional
 
-import fastf1 
-import pandas as pd 
+import fastf1
+import pandas as pd
 import numpy as np
 
 warnings.filterwarnings("ignore")
@@ -21,28 +22,32 @@ from src.utils.logger import get_logger
 
 logger = get_logger(__name__)
 
-# Tell FastF1 where to cache downloaded sessions
 fastf1.Cache.enable_cache(str(CACHE_DIR))
+
+import logging
+logging.getLogger("fastf1").setLevel(logging.WARNING)
+
+
+def _timeout_handler(signum, frame):
+    raise TimeoutError("Session load timed out")
 
 
 class SessionFetcher:
-    """
-    Fetches a single FastF1 session with automatic retries.
-    Returns None if the session doesn't exist or fails after 3 attempts.
-    """
-
-    MAX_RETRIES = 3
-    RETRY_DELAY = 5  # seconds between retries
+    MAX_RETRIES = 2
+    RETRY_DELAY = 3
 
     def fetch(
         self,
         year: int,
         round_number: int,
-        session_type: str,  # 'R' = Race, 'Q' = Qualifying, 'S' = Sprint
+        session_type: str,
     ) -> Optional[object]:
 
         for attempt in range(self.MAX_RETRIES):
             try:
+                signal.signal(signal.SIGALRM, _timeout_handler)
+                signal.alarm(60)  # 60 second timeout
+
                 session = fastf1.get_session(year, round_number, session_type)
                 session.load(
                     laps=True,
@@ -50,29 +55,34 @@ class SessionFetcher:
                     weather=True,
                     messages=False,
                 )
+                signal.alarm(0)  # cancel timeout on success
                 return session
 
+            except TimeoutError:
+                signal.alarm(0)
+                logger.warning(
+                    f"  Timeout for {year} R{round_number} {session_type}. "
+                    f"Attempt {attempt + 1}/{self.MAX_RETRIES}"
+                )
+                if attempt == self.MAX_RETRIES - 1:
+                    logger.warning(f"  Skipping after timeout.")
+                    return None
+
             except Exception as exc:
+                signal.alarm(0)
                 if attempt < self.MAX_RETRIES - 1:
                     logger.warning(
-                        f"  Attempt {attempt + 1} failed for "
-                        f"{year} R{round_number} {session_type}: {exc}. Retrying..."
+                        f"  Attempt {attempt + 1} failed: {exc}. Retrying..."
                     )
                     time.sleep(self.RETRY_DELAY)
                 else:
                     logger.warning(
-                        f"  Skipping {year} R{round_number} {session_type} "
-                        f"after {self.MAX_RETRIES} attempts: {exc}"
+                        f"  Skipping after {self.MAX_RETRIES} attempts: {exc}"
                     )
                     return None
 
 
 class RaceParser:
-    """
-    Turns a FastF1 Race session into a flat DataFrame.
-    One row per driver with their result, lap stats, pit stops, and weather.
-    """
-
     def parse(self, session) -> pd.DataFrame:
         results = session.results
         if results is None or results.empty:
@@ -84,7 +94,6 @@ class RaceParser:
             if not driver:
                 continue
 
-            # Lap time stats for this driver
             driver_laps = session.laps.pick_driver(driver)
             valid_laps  = driver_laps[driver_laps["LapTime"].notna()]
 
@@ -92,16 +101,13 @@ class RaceParser:
             median_lap  = valid_laps["LapTime"].median() if not valid_laps.empty else pd.NaT
             lap_count   = len(driver_laps)
 
-            # Pit stop count
             pit_stops = int(driver_laps["PitOutTime"].notna().sum()) if not driver_laps.empty else 0
 
-            # Tyre compounds used
             compounds = (
                 driver_laps["Compound"].dropna().unique().tolist()
                 if not driver_laps.empty else []
             )
 
-            # Points
             finish_pos = row.get("Position", np.nan)
             try:
                 finish_pos = int(finish_pos)
@@ -110,7 +116,6 @@ class RaceParser:
 
             base_points = POINTS_SYSTEM.get(finish_pos, 0)
 
-            # Fastest lap bonus (post-2019, top-10 only)
             fl_bonus = 0
             if session.event["EventDate"].year >= 2019 and finish_pos <= 10:
                 try:
@@ -120,18 +125,16 @@ class RaceParser:
                 except Exception:
                     pass
 
-            # Weather summary
-            weather     = session.weather_data
-            track_temp  = np.nan
-            air_temp    = np.nan
-            rainfall    = False
+            weather    = session.weather_data
+            track_temp = np.nan
+            air_temp   = np.nan
+            rainfall   = False
 
             if weather is not None and not weather.empty:
                 track_temp = weather["TrackTemp"].mean()
                 air_temp   = weather["AirTemp"].mean()
                 rainfall   = bool(weather["Rainfall"].any())
 
-            # DNF check
             status = str(row.get("Status", "")).strip()
             dnf    = status not in ("Finished", "") and not status.startswith("+")
 
@@ -170,11 +173,6 @@ class RaceParser:
 
 
 class QualiParser:
-    """
-    Turns a FastF1 Qualifying session into a flat DataFrame.
-    One row per driver with Q1/Q2/Q3 times and final grid position.
-    """
-
     def parse(self, session) -> pd.DataFrame:
         results = session.results
         if results is None or results.empty:
@@ -219,11 +217,6 @@ class QualiParser:
 
 
 class SprintParser:
-    """
-    Turns a FastF1 Sprint session into a flat DataFrame.
-    One row per driver with finish position and sprint points.
-    """
-
     def parse(self, session) -> pd.DataFrame:
         results = session.results
         if results is None or results.empty:
@@ -242,33 +235,19 @@ class SprintParser:
                 finish_pos = 0
 
             rows.append({
-                "season":           session.event["EventDate"].year,
-                "round":            session.event["RoundNumber"],
-                "circuit_id":       session.event["Location"].replace(" ", "_").lower(),
-                "driver":           driver,
-                "team":             row.get("TeamName", ""),
+                "season":            session.event["EventDate"].year,
+                "round":             session.event["RoundNumber"],
+                "circuit_id":        session.event["Location"].replace(" ", "_").lower(),
+                "driver":            driver,
+                "team":              row.get("TeamName", ""),
                 "sprint_finish_pos": finish_pos,
-                "sprint_points":    SPRINT_POINTS.get(finish_pos, 0),
+                "sprint_points":     SPRINT_POINTS.get(finish_pos, 0),
             })
 
         return pd.DataFrame(rows)
 
 
 class DataLoader:
-    """
-    Main entry point for data collection.
-    Loops over every season and round, fetches Race + Qualifying + Sprint,
-    and saves per-season parquet files to data/raw/.
-
-    Already downloaded seasons are loaded from disk automatically.
-
-    Usage:
-        loader = DataLoader()
-        data = loader.run(seasons=[2023, 2024])
-        data = loader.run()               # all seasons in config
-        data = loader.load_from_disk()    # skip API entirely
-    """
-
     def __init__(self):
         self.fetcher       = SessionFetcher()
         self.race_parser   = RaceParser()
@@ -292,11 +271,10 @@ class DataLoader:
             logger.info(f"{'─' * 50}")
             logger.info(f"Season {season}")
 
-            race_path  = RAW_DIR / f"season_{season}.parquet"
-            quali_path = RAW_DIR / f"quali_{season}.parquet"
-            sprint_path= RAW_DIR / f"sprint_{season}.parquet"
+            race_path   = RAW_DIR / f"season_{season}.parquet"
+            quali_path  = RAW_DIR / f"quali_{season}.parquet"
+            sprint_path = RAW_DIR / f"sprint_{season}.parquet"
 
-            # Load from disk if already downloaded
             if race_path.exists() and not force_reload:
                 logger.info(f"  Already downloaded — loading from disk")
                 all_races.append(pd.read_parquet(race_path))
@@ -320,7 +298,6 @@ class DataLoader:
                 name = name[0] if len(name) else f"Round {rnd}"
                 logger.info(f"  Round {rnd:02d} — {name}")
 
-                # Race
                 race_session = self.fetcher.fetch(season, rnd, "R")
                 if race_session:
                     df = self.race_parser.parse(race_session)
@@ -328,7 +305,6 @@ class DataLoader:
                         season_races.append(df)
                         logger.info(f"    ✓ Race: {len(df)} drivers")
 
-                # Qualifying
                 quali_session = self.fetcher.fetch(season, rnd, "Q")
                 if quali_session:
                     df = self.quali_parser.parse(quali_session)
@@ -336,7 +312,6 @@ class DataLoader:
                         season_qualis.append(df)
                         logger.info(f"    ✓ Qualifying: {len(df)} drivers")
 
-                # Sprint (only some rounds, post-2021)
                 if season >= 2021:
                     sprint_session = self.fetcher.fetch(season, rnd, "S")
                     if sprint_session:
@@ -347,7 +322,6 @@ class DataLoader:
 
                 time.sleep(0.3)
 
-            # Save season to disk
             if season_races:
                 df = pd.concat(season_races, ignore_index=True)
                 df.to_parquet(race_path, index=False)
@@ -372,14 +346,15 @@ class DataLoader:
         if all_sprints:
             result["sprints"] = pd.concat(all_sprints, ignore_index=True)
 
-        logger.info(f"\nDone. Races: {len(result.get('races', []))}, "
-                    f"Quali: {len(result.get('qualifying', []))}, "
-                    f"Sprints: {len(result.get('sprints', []))}")
+        logger.info(
+            f"\nDone. Races: {len(result.get('races', []))}, "
+            f"Quali: {len(result.get('qualifying', []))}, "
+            f"Sprints: {len(result.get('sprints', []))}"
+        )
 
         return result
 
     def load_from_disk(self, seasons: list = None) -> dict:
-        """Load already-downloaded parquet files without hitting the API."""
         from config.config import SEASONS
         seasons = seasons or SEASONS
 
