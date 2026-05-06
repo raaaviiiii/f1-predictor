@@ -103,13 +103,16 @@ XGBOOST_DEFAULTS = {
 }
 
 LIGHTGBM_DEFAULTS = {
-    "n_estimators":      500,
-    "max_depth":         6,
-    "learning_rate":     0.05,
-    "num_leaves":        31,
-    "subsample":         0.8,
-    "colsample_bytree":  0.8,
-    "random_state":      42,
+    "n_estimators":       300,
+    "max_depth":          4,
+    "learning_rate":      0.05,
+    "num_leaves":         15,
+    "subsample":          0.8,
+    "colsample_bytree":   0.8,
+    "min_child_samples":  20,
+    "reg_alpha":          0.5,
+    "reg_lambda":         1.0,
+    "random_state":       42,
     "n_jobs":            -1,
-    "verbose":          -1,
+    "verbose":           -1,
 }
