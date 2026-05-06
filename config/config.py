@@ -7,13 +7,16 @@ RAW_DIR       = DATA_DIR / "raw"
 PROCESSED_DIR = DATA_DIR / "processed"
 CACHE_DIR     = DATA_DIR / "cache"
 OUTPUTS_DIR   = ROOT_DIR / "outputs"
+MODELS_DIR    = OUTPUTS_DIR / "models"
+PLOTS_DIR     = OUTPUTS_DIR / "plots"
+REPORTS_DIR   = OUTPUTS_DIR / "reports"
 
 # Create them if they don't exist
-for d in [RAW_DIR, PROCESSED_DIR, CACHE_DIR, OUTPUTS_DIR]:
+for d in [RAW_DIR, PROCESSED_DIR, CACHE_DIR, OUTPUTS_DIR, MODELS_DIR, PLOTS_DIR, REPORTS_DIR]:
     d.mkdir(parents=True, exist_ok=True)
 
 # ── Seasons ─────────────────────────────────────────────────────────────────
-SEASONS        = list(range(2018, 2026))   # 2018–2025 for training
+SEASONS        = list(range(2010, 2026))   # 2018–2025 for training
 PREDICT_SEASON = 2026
 
 # ── Regulation eras ─────────────────────────────────────────────────────────

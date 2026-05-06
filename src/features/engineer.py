@@ -21,6 +21,7 @@ class FeatureEngineer:
       - Rolling driver form (3, 5, 10 race windows)
       - Rolling constructor form
       - Teammate deltas (quali and race)
+      - Pace vs field
       - Overtake index
       - Wet performance coefficient
       - Tyre / pit stop features
@@ -48,6 +49,7 @@ class FeatureEngineer:
         df = self._rolling_driver_features(df)
         df = self._rolling_constructor_features(df)
         df = self._teammate_features(df)
+        df = self._pace_features(df)
         df = self._overtake_index(df)
         df = self._wet_performance(df)
         df = self._tyre_features(df)
@@ -140,6 +142,34 @@ class FeatureEngineer:
         df["finish_pos_vs_teammate"] = result["finish_pos_vs_teammate"]
         return df
 
+    # ── Pace features ──────────────────────────────────────────────────────
+
+    def _pace_features(self, df: pd.DataFrame) -> pd.DataFrame:
+        logger.info("  Pace features...")
+
+        # Lap time delta vs field median per race
+        race_median = (
+            df.groupby(["season", "round"])["fastest_lap_ms"]
+            .median()
+            .rename("field_median_lap_ms")
+            .reset_index()
+        )
+        df = df.merge(race_median, on=["season", "round"], how="left")
+
+        df["pace_vs_field"] = (
+            (df["fastest_lap_ms"] - df["field_median_lap_ms"])
+            / df["field_median_lap_ms"]
+        ) * 100
+
+        # Rolling average pace vs field (last 5 races)
+        df = df.sort_values(["driver", "season", "round"])
+        df["roll_pace_vs_field_5"] = (
+            df.groupby("driver")["pace_vs_field"]
+            .transform(lambda x: x.shift(1).rolling(5, min_periods=1).mean())
+        )
+
+        return df
+
     # ── Overtake index ─────────────────────────────────────────────────────
 
     def _overtake_index(self, df: pd.DataFrame) -> pd.DataFrame:
@@ -193,7 +223,9 @@ class FeatureEngineer:
             .reset_index()
         )
         df = df.merge(cta, on="circuit_id", how="left")
-        df["avg_track_temp_c"] = df["avg_track_temp_c"].fillna(df["circuit_avg_track_temp"]).fillna(30.0)
+        df["avg_track_temp_c"] = df["avg_track_temp_c"].fillna(
+            df["circuit_avg_track_temp"]
+        ).fillna(30.0)
         return df
 
     # ── Championship gaps ──────────────────────────────────────────────────
@@ -242,20 +274,17 @@ class FeatureEngineer:
     # ── Finalise ───────────────────────────────────────────────────────────
 
     def _finalise(self, df: pd.DataFrame) -> pd.DataFrame:
-        # Target columns
         df["is_winner"] = (df["finish_position"] == 1).astype(int)
         df["is_podium"] = (df["finish_position"] <= 3).astype(int)
 
-        # Drop columns not needed for modelling
         drop_cols = [
             "driver_full", "event_name", "status", "compounds_used",
             "pole_time_ms", "circuit_avg_pit_stops", "circuit_avg_track_temp",
             "leader_pts", "con_leader_pts", "positions_gained_clean",
-            "constructor_round_pts",
+            "constructor_round_pts", "field_median_lap_ms",
         ]
         df = df.drop(columns=[c for c in drop_cols if c in df.columns])
 
-        # Fill remaining NaNs with median
         num_cols = df.select_dtypes(include=[np.number]).columns
         df[num_cols] = df[num_cols].fillna(df[num_cols].median())
 
