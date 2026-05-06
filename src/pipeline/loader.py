@@ -46,7 +46,7 @@ class SessionFetcher:
         for attempt in range(self.MAX_RETRIES):
             try:
                 signal.signal(signal.SIGALRM, _timeout_handler)
-                signal.alarm(60)  # 60 second timeout
+                signal.alarm(120)
 
                 session = fastf1.get_session(year, round_number, session_type)
                 session.load(
@@ -55,7 +55,7 @@ class SessionFetcher:
                     weather=True,
                     messages=False,
                 )
-                signal.alarm(0)  # cancel timeout on success
+                signal.alarm(0)
                 return session
 
             except TimeoutError:
@@ -88,25 +88,35 @@ class RaceParser:
         if results is None or results.empty:
             return pd.DataFrame()
 
+        # Check if laps loaded successfully
+        try:
+            all_laps = session.laps
+            laps_available = True
+        except Exception:
+            laps_available = False
+            all_laps = pd.DataFrame()
+
         rows = []
         for _, row in results.iterrows():
             driver = row.get("Abbreviation", "")
             if not driver:
                 continue
 
-            driver_laps = session.laps.pick_driver(driver)
-            valid_laps  = driver_laps[driver_laps["LapTime"].notna()]
-
-            fastest_lap = valid_laps["LapTime"].min() if not valid_laps.empty else pd.NaT
-            median_lap  = valid_laps["LapTime"].median() if not valid_laps.empty else pd.NaT
-            lap_count   = len(driver_laps)
-
-            pit_stops = int(driver_laps["PitOutTime"].notna().sum()) if not driver_laps.empty else 0
-
-            compounds = (
-                driver_laps["Compound"].dropna().unique().tolist()
-                if not driver_laps.empty else []
-            )
+            # Lap stats
+            if laps_available and not all_laps.empty:
+                driver_laps = all_laps.pick_driver(driver)
+                valid_laps  = driver_laps[driver_laps["LapTime"].notna()]
+                fastest_lap = valid_laps["LapTime"].min() if not valid_laps.empty else pd.NaT
+                median_lap  = valid_laps["LapTime"].median() if not valid_laps.empty else pd.NaT
+                lap_count   = len(driver_laps)
+                pit_stops   = int(driver_laps["PitOutTime"].notna().sum()) if not driver_laps.empty else 0
+                compounds   = driver_laps["Compound"].dropna().unique().tolist() if not driver_laps.empty else []
+            else:
+                fastest_lap = pd.NaT
+                median_lap  = pd.NaT
+                lap_count   = 0
+                pit_stops   = 0
+                compounds   = []
 
             finish_pos = row.get("Position", np.nan)
             try:
@@ -117,7 +127,7 @@ class RaceParser:
             base_points = POINTS_SYSTEM.get(finish_pos, 0)
 
             fl_bonus = 0
-            if session.event["EventDate"].year >= 2019 and finish_pos <= 10:
+            if laps_available and session.event["EventDate"].year >= 2019 and finish_pos <= 10:
                 try:
                     overall_fastest = session.laps["LapTime"].min()
                     if fastest_lap == overall_fastest:
@@ -131,9 +141,12 @@ class RaceParser:
             rainfall   = False
 
             if weather is not None and not weather.empty:
-                track_temp = weather["TrackTemp"].mean()
-                air_temp   = weather["AirTemp"].mean()
-                rainfall   = bool(weather["Rainfall"].any())
+                try:
+                    track_temp = weather["TrackTemp"].mean()
+                    air_temp   = weather["AirTemp"].mean()
+                    rainfall   = bool(weather["Rainfall"].any())
+                except Exception:
+                    pass
 
             status = str(row.get("Status", "")).strip()
             dnf    = status not in ("Finished", "") and not status.startswith("+")
