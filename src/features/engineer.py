@@ -22,6 +22,7 @@ class FeatureEngineer:
       - Rolling constructor form
       - Teammate deltas (quali and race)
       - Pace vs field
+      - Circuit history (avg finish, win rate, podium rate per circuit)
       - Overtake index
       - Wet performance coefficient
       - Tyre / pit stop features
@@ -50,6 +51,7 @@ class FeatureEngineer:
         df = self._rolling_constructor_features(df)
         df = self._teammate_features(df)
         df = self._pace_features(df)
+        df = self._circuit_history_features(df)
         df = self._overtake_index(df)
         df = self._wet_performance(df)
         df = self._tyre_features(df)
@@ -147,7 +149,6 @@ class FeatureEngineer:
     def _pace_features(self, df: pd.DataFrame) -> pd.DataFrame:
         logger.info("  Pace features...")
 
-        # Lap time delta vs field median per race
         race_median = (
             df.groupby(["season", "round"])["fastest_lap_ms"]
             .median()
@@ -161,12 +162,51 @@ class FeatureEngineer:
             / df["field_median_lap_ms"]
         ) * 100
 
-        # Rolling average pace vs field (last 5 races)
         df = df.sort_values(["driver", "season", "round"])
         df["roll_pace_vs_field_5"] = (
             df.groupby("driver")["pace_vs_field"]
             .transform(lambda x: x.shift(1).rolling(5, min_periods=1).mean())
         )
+
+        return df
+
+    # ── Circuit history features ───────────────────────────────────────────
+
+    def _circuit_history_features(self, df: pd.DataFrame) -> pd.DataFrame:
+        logger.info("  Circuit history features...")
+
+        # Add temporary target columns if not present
+        if "is_winner" not in df.columns:
+            df["is_winner"] = (df["finish_position"] == 1).astype(int)
+        if "is_podium" not in df.columns:
+            df["is_podium"] = (df["finish_position"] <= 3).astype(int)
+
+        df = df.sort_values(["driver", "circuit_id", "season", "round"])
+
+        # Historical average finish at this circuit (before this race)
+        df["circuit_hist_avg_finish"] = (
+            df.groupby(["driver", "circuit_id"])["finish_position"]
+            .transform(lambda x: x.shift(1).expanding().mean())
+        )
+
+        # Historical win rate at this circuit
+        df["circuit_hist_win_rate"] = (
+            df.groupby(["driver", "circuit_id"])["is_winner"]
+            .transform(lambda x: x.shift(1).expanding().mean())
+        )
+
+        # Historical podium rate at this circuit
+        df["circuit_hist_podium_rate"] = (
+            df.groupby(["driver", "circuit_id"])["is_podium"]
+            .transform(lambda x: x.shift(1).expanding().mean())
+        )
+
+        # Fill NaN (first time at circuit) with driver's overall rolling average
+        df["circuit_hist_avg_finish"] = df["circuit_hist_avg_finish"].fillna(
+            df["roll_avg_finish_10"]
+        )
+        df["circuit_hist_win_rate"]    = df["circuit_hist_win_rate"].fillna(0)
+        df["circuit_hist_podium_rate"] = df["circuit_hist_podium_rate"].fillna(0)
 
         return df
 

@@ -4,7 +4,6 @@ import pandas as pd
 import numpy as np
 import joblib
 from xgboost import XGBClassifier
-from sklearn.calibration import CalibratedClassifierCV
 from sklearn.metrics import log_loss, roc_auc_score
 
 import sys
@@ -15,7 +14,6 @@ from src.utils.logger import get_logger
 
 logger = get_logger(__name__)
 
-# Features used for race winner prediction
 WINNER_FEATURES = [
     "grid_position",
     "quali_position",
@@ -51,28 +49,16 @@ WINNER_FEATURES = [
     "circuit_id_enc",
     "track_type_enc",
     "regulation_era_enc",
+    "pace_vs_field",
+    "roll_pace_vs_field_5",
 ]
 
 
 class RaceWinnerModel:
-    """
-    XGBoost classifier that predicts win probability for each driver.
-
-    Training approach:
-    - Temporal split: train on seasons up to cutoff, test on remaining
-    - Never random splits across seasons (would leak future data)
-    - Calibrated probabilities using isotonic regression
-
-    Usage:
-        model = RaceWinnerModel()
-        model.train(features_df, train_seasons=[2018,2019,2020,2021,2022],
-                                  test_seasons=[2023,2024])
-        probs = model.predict(race_features_df)
-    """
 
     def __init__(self):
-        self.model     = None
-        self.features  = WINNER_FEATURES
+        self.model         = None
+        self.features      = WINNER_FEATURES
         self.train_seasons = None
         self.test_seasons  = None
 
@@ -89,38 +75,28 @@ class RaceWinnerModel:
         self.train_seasons = train_seasons
         self.test_seasons  = test_seasons
 
-        # ── Split ──────────────────────────────────────────────────────────
-        train_df = df[df["season"].isin(train_seasons)].copy()
-        test_df  = df[df["season"].isin(test_seasons)].copy()
+        train_df = df[df["season"].isin(train_seasons) & (df["finish_position"] > 0)].copy()
+        test_df  = df[df["season"].isin(test_seasons)  & (df["finish_position"] > 0)].copy()
 
-        # Drop rows with missing target
-        train_df = train_df[train_df["finish_position"] > 0]
-        test_df  = test_df[test_df["finish_position"] > 0]
-
-        # Available features (some may be missing in older seasons)
-        available = [f for f in self.features if f in df.columns]
+        available     = [f for f in self.features if f in df.columns]
         self.features = available
 
-        X_train = train_df[self.features].fillna(0)
+        X_train = train_df[available].fillna(0)
         y_train = train_df["is_winner"]
-        X_test  = test_df[self.features].fillna(0)
+        X_test  = test_df[available].fillna(0)
         y_test  = test_df["is_winner"]
 
-        logger.info(f"  Train: {len(X_train)} rows | "
-                    f"Test: {len(X_test)} rows | "
-                    f"Features: {len(self.features)}")
-        logger.info(f"  Win rate train: {y_train.mean():.3f} | "
-                    f"test: {y_test.mean():.3f}")
+        logger.info(
+            f"  Train: {len(X_train)} | Test: {len(X_test)} | "
+            f"Features: {len(available)}"
+        )
 
-        # ── Class weight ───────────────────────────────────────────────────
-        # ~5% of rows are winners — we need scale_pos_weight to balance
-        neg = (y_train == 0).sum()
-        pos = (y_train == 1).sum()
+        neg   = (y_train == 0).sum()
+        pos   = (y_train == 1).sum()
         scale = neg / pos
         logger.info(f"  scale_pos_weight: {scale:.1f}")
 
-        # ── Train ──────────────────────────────────────────────────────────
-        params = {**XGBOOST_DEFAULTS, "scale_pos_weight": scale}
+        params     = {**XGBOOST_DEFAULTS, "scale_pos_weight": scale}
         self.model = XGBClassifier(**params)
         self.model.fit(
             X_train, y_train,
@@ -128,7 +104,6 @@ class RaceWinnerModel:
             verbose=50,
         )
 
-        # ── Evaluate ───────────────────────────────────────────────────────
         train_probs = self.model.predict_proba(X_train)[:, 1]
         test_probs  = self.model.predict_proba(X_test)[:, 1]
 
@@ -144,35 +119,82 @@ class RaceWinnerModel:
         logger.info(f"\n  {'─'*40}")
         logger.info(f"  Test log-loss:    {metrics['test_logloss']:.4f}")
         logger.info(f"  Test AUC:         {metrics['test_auc']:.4f}")
-        logger.info(f"  Top-1 accuracy:   {metrics['top1_accuracy']:.3f} "
-                    f"(predicted winner = actual winner)")
-        logger.info(f"  Top-3 accuracy:   {metrics['top3_accuracy']:.3f} "
-                    f"(winner in top-3 predicted)")
+        logger.info(f"  Top-1 accuracy:   {metrics['top1_accuracy']:.3f}")
+        logger.info(f"  Top-3 accuracy:   {metrics['top3_accuracy']:.3f}")
         logger.info(f"  {'─'*40}")
 
         return metrics
 
-    def predict(self, df: pd.DataFrame) -> pd.DataFrame:
+    def predict(
+        self,
+        df: pd.DataFrame,
+        circuit_id: str = None,
+    ) -> pd.DataFrame:
         """
         Predicts win probability for each driver.
-        Returns df with added 'win_probability' column, sorted by probability.
+        If circuit_id is provided, applies a circuit history multiplier
+        to adjust probabilities based on past performance at that circuit.
         """
         if self.model is None:
-            raise ValueError("Model not trained. Call train() first.")
+            raise ValueError("Model not trained.")
 
         available = [f for f in self.features if f in df.columns]
-        X = df[available].fillna(0)
-        probs = self.model.predict_proba(X)[:, 1]
+        X         = df[available].fillna(0)
+        probs     = self.model.predict_proba(X)[:, 1]
 
-        result = df[["driver", "team"]].copy()
+        result                    = df[["driver", "team"]].copy()
         result["win_probability"] = probs
 
-        # Normalise so probabilities sum to 100% per race
+        # ── Circuit history multiplier ─────────────────────────────────────
+        if circuit_id is not None:
+            try:
+                history_path = Path(str(MODELS_DIR)) / "circuit_history.pkl"
+                if history_path.exists():
+                    circuit_history = joblib.load(history_path)
+                    circuit_hist    = circuit_history[
+                        circuit_history["circuit_id"] == circuit_id
+                    ]
+
+                    if not circuit_hist.empty:
+                        field_avg_win_rate = 1 / max(len(result), 1)
+
+                        for idx, row in result.iterrows():
+                            driver      = row["driver"]
+                            driver_hist = circuit_hist[
+                                circuit_hist["driver"] == driver
+                            ]
+
+                            if (
+                                not driver_hist.empty and
+                                driver_hist["appearances"].iloc[0] >= 2
+                            ):
+                                win_rate    = driver_hist["hist_win_rate"].iloc[0]
+                                appearances = driver_hist["appearances"].iloc[0]
+
+                                # Weight increases with more appearances (max 0.4)
+                                weight = min(appearances / 10, 0.4)
+
+                                # Multiplier: positive = historically strong here
+                                multiplier = 1.0 + weight * (
+                                    (win_rate - field_avg_win_rate)
+                                    / max(field_avg_win_rate, 0.001)
+                                )
+                                # Cap between 0.7x and 1.5x
+                                multiplier = max(0.7, min(1.5, multiplier))
+
+                                result.at[idx, "win_probability"] *= multiplier
+
+            except Exception as e:
+                logger.warning(f"Circuit history multiplier failed: {e}")
+
+        # Normalise so probabilities sum to 1
         total = result["win_probability"].sum()
         if total > 0:
             result["win_probability"] = result["win_probability"] / total
 
-        return result.sort_values("win_probability", ascending=False).reset_index(drop=True)
+        return result.sort_values(
+            "win_probability", ascending=False
+        ).reset_index(drop=True)
 
     def save(self, path: Path = None):
         path = path or MODELS_DIR / "race_winner.pkl"
@@ -181,46 +203,44 @@ class RaceWinnerModel:
 
     def load(self, path: Path = None):
         path = path or MODELS_DIR / "race_winner.pkl"
-        obj = joblib.load(path)
-        self.model    = obj["model"]
+        obj          = joblib.load(path)
+        self.model   = obj["model"]
         self.features = obj["features"]
         logger.info(f"  ✓ Model loaded from {path}")
 
     # ── Evaluation helpers ─────────────────────────────────────────────────
 
     def _top1_accuracy(self, df: pd.DataFrame, probs: np.ndarray) -> float:
-        """
-        For each race, did the driver with highest predicted probability
-        actually win?
-        """
-        df = df.copy()
+        df         = df.copy()
         df["prob"] = probs
-        correct = 0
-        total   = 0
+        correct    = 0
+        total      = 0
         for (season, rnd), grp in df.groupby(["season", "round"]):
-            predicted_winner = grp.loc[grp["prob"].idxmax(), "driver"]
-            actual_winner    = grp.loc[grp["is_winner"] == 1, "driver"]
-            if actual_winner.empty:
+            predicted = grp.loc[grp["prob"].idxmax(), "driver"]
+            actual    = grp.loc[grp["is_winner"] == 1, "driver"]
+            if actual.empty:
                 continue
-            if predicted_winner == actual_winner.values[0]:
+            if predicted == actual.values[0]:
                 correct += 1
             total += 1
         return correct / total if total > 0 else 0.0
 
-    def _topk_accuracy(self, df: pd.DataFrame, probs: np.ndarray, k: int = 3) -> float:
-        """
-        For each race, was the actual winner in the top-k predicted drivers?
-        """
-        df = df.copy()
+    def _topk_accuracy(
+        self,
+        df: pd.DataFrame,
+        probs: np.ndarray,
+        k: int = 3,
+    ) -> float:
+        df         = df.copy()
         df["prob"] = probs
-        correct = 0
-        total   = 0
+        correct    = 0
+        total      = 0
         for (season, rnd), grp in df.groupby(["season", "round"]):
-            top_k         = grp.nlargest(k, "prob")["driver"].values
-            actual_winner = grp.loc[grp["is_winner"] == 1, "driver"]
-            if actual_winner.empty:
+            top_k  = grp.nlargest(k, "prob")["driver"].values
+            actual = grp.loc[grp["is_winner"] == 1, "driver"]
+            if actual.empty:
                 continue
-            if actual_winner.values[0] in top_k:
+            if actual.values[0] in top_k:
                 correct += 1
             total += 1
         return correct / total if total > 0 else 0.0
