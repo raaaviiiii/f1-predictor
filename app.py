@@ -469,6 +469,7 @@ def main():
                 st.markdown("#### 🏆 Drivers Championship (WDC)")
 
                 fig_wdc = go.Figure()
+                wdc = wdc.sort_values("projected_final_pts", ascending=False).reset_index(drop=True)
                 for _, row in wdc.head(22).iterrows():
                     color = TEAM_COLORS.get(str(row["team"]), "#666666")
                     fig_wdc.add_trace(go.Bar(
@@ -527,6 +528,7 @@ def main():
                 st.markdown("#### 🏗 Constructors Championship (WCC)")
 
                 fig_wcc = go.Figure()
+                wcc = wcc.sort_values("projected_final_pts", ascending=False).reset_index(drop=True)
                 for _, row in wcc.head(12).iterrows():
                     color = TEAM_COLORS.get(str(row["team"]), "#666666")
                     fig_wcc.add_trace(go.Bar(
