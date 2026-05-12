@@ -50,7 +50,11 @@ WINNER_FEATURES = [
     "track_type_enc",
     "regulation_era_enc",
     "pace_vs_field",
-    "roll_pace_vs_field_5",
+    "roll_pace_vs_field_5"
+    "season_avg_finish",
+    "season_avg_points",
+    "season_win_count",
+    "season_podium_count",
 ]
 
 
