@@ -1,0 +1,154 @@
+season,round,event_name,circuit,country,date
+2020,1,Austrian Grand Prix,Spielberg,Austria,2020-07-05
+2020,2,Styrian Grand Prix,Spielberg,Austria,2020-07-12
+2020,3,Hungarian Grand Prix,Budapest,Hungary,2020-07-19
+2020,4,British Grand Prix,Silverstone,Great Britain,2020-08-02
+2020,5,70th Anniversary Grand Prix,Silverstone,Great Britain,2020-08-09
+2020,6,Spanish Grand Prix,Barcelona,Spain,2020-08-16
+2020,7,Belgian Grand Prix,Spa-Francorchamps,Belgium,2020-08-30
+2020,8,Italian Grand Prix,Monza,Italy,2020-09-06
+2020,9,Tuscan Grand Prix,Mugello,Italy,2020-09-13
+2020,10,Russian Grand Prix,Sochi,Russia,2020-09-27
+2020,11,Eifel Grand Prix,Nürburgring,Germany,2020-10-11
+2020,12,Portuguese Grand Prix,Portimão,Portugal,2020-10-25
+2020,13,Emilia Romagna Grand Prix,Imola,Italy,2020-11-01
+2020,14,Turkish Grand Prix,Istanbul,Turkey,2020-11-15
+2020,15,Bahrain Grand Prix,Sakhir,Bahrain,2020-11-29
+2020,16,Sakhir Grand Prix,Sakhir,Bahrain,2020-12-06
+2020,17,Abu Dhabi Grand Prix,Yas Island,Abu Dhabi,2020-12-13
+2021,1,Bahrain Grand Prix,Sakhir,Bahrain,2021-03-28
+2021,2,Emilia Romagna Grand Prix,Imola,Italy,2021-04-18
+2021,3,Portuguese Grand Prix,Portimão,Portugal,2021-05-02
+2021,4,Spanish Grand Prix,Barcelona,Spain,2021-05-09
+2021,5,Monaco Grand Prix,Monte Carlo,Monaco,2021-05-23
+2021,6,Azerbaijan Grand Prix,Baku,Azerbaijan,2021-06-06
+2021,7,French Grand Prix,Le Castellet,France,2021-06-20
+2021,8,Styrian Grand Prix,Spielberg,Austria,2021-06-27
+2021,9,Austrian Grand Prix,Spielberg,Austria,2021-07-04
+2021,10,British Grand Prix,Silverstone,Great Britain,2021-07-18
+2021,11,Hungarian Grand Prix,Budapest,Hungary,2021-08-01
+2021,12,Belgian Grand Prix,Spa-Francorchamps,Belgium,2021-08-29
+2021,13,Dutch Grand Prix,Zandvoort,Netherlands,2021-09-05
+2021,14,Italian Grand Prix,Monza,Italy,2021-09-12
+2021,15,Russian Grand Prix,Sochi,Russia,2021-09-26
+2021,16,Turkish Grand Prix,Istanbul,Turkey,2021-10-10
+2021,17,United States Grand Prix,Austin,United States,2021-10-24
+2021,18,Mexico City Grand Prix,Mexico City,Mexico,2021-11-07
+2021,19,São Paulo Grand Prix,São Paulo,Brazil,2021-11-14
+2021,20,Qatar Grand Prix,Lusail,Qatar,2021-11-21
+2021,21,Saudi Arabian Grand Prix,Jeddah,Saudi Arabia,2021-12-05
+2021,22,Abu Dhabi Grand Prix,Yas Island,Abu Dhabi,2021-12-12
+2022,1,Bahrain Grand Prix,Sakhir,Bahrain,2022-03-20
+2022,2,Saudi Arabian Grand Prix,Jeddah,Saudi Arabia,2022-03-27
+2022,3,Australian Grand Prix,Melbourne,Australia,2022-04-10
+2022,4,Emilia Romagna Grand Prix,Imola,Italy,2022-04-24
+2022,5,Miami Grand Prix,Miami,United States,2022-05-08
+2022,6,Spanish Grand Prix,Barcelona,Spain,2022-05-22
+2022,7,Monaco Grand Prix,Monaco,Monaco,2022-05-29
+2022,8,Azerbaijan Grand Prix,Baku,Azerbaijan,2022-06-12
+2022,9,Canadian Grand Prix,Montréal,Canada,2022-06-19
+2022,10,British Grand Prix,Silverstone,Great Britain,2022-07-03
+2022,11,Austrian Grand Prix,Spielberg,Austria,2022-07-10
+2022,12,French Grand Prix,Le Castellet,France,2022-07-24
+2022,13,Hungarian Grand Prix,Budapest,Hungary,2022-07-31
+2022,14,Belgian Grand Prix,Spa-Francorchamps,Belgium,2022-08-28
+2022,15,Dutch Grand Prix,Zandvoort,Netherlands,2022-09-04
+2022,16,Italian Grand Prix,Monza,Italy,2022-09-11
+2022,17,Singapore Grand Prix,Marina Bay,Singapore,2022-10-02
+2022,18,Japanese Grand Prix,Suzuka,Japan,2022-10-09
+2022,19,United States Grand Prix,Austin,United States,2022-10-23
+2022,20,Mexico City Grand Prix,Mexico City,Mexico,2022-10-30
+2022,21,São Paulo Grand Prix,São Paulo,Brazil,2022-11-13
+2022,22,Abu Dhabi Grand Prix,Yas Island,Abu Dhabi,2022-11-20
+2023,1,Bahrain Grand Prix,Sakhir,Bahrain,2023-03-05
+2023,2,Saudi Arabian Grand Prix,Jeddah,Saudi Arabia,2023-03-19
+2023,3,Australian Grand Prix,Melbourne,Australia,2023-04-02
+2023,4,Azerbaijan Grand Prix,Baku,Azerbaijan,2023-04-30
+2023,5,Miami Grand Prix,Miami,United States,2023-05-07
+2023,6,Monaco Grand Prix,Monaco,Monaco,2023-05-28
+2023,7,Spanish Grand Prix,Barcelona,Spain,2023-06-04
+2023,8,Canadian Grand Prix,Montréal,Canada,2023-06-18
+2023,9,Austrian Grand Prix,Spielberg,Austria,2023-07-02
+2023,10,British Grand Prix,Silverstone,Great Britain,2023-07-09
+2023,11,Hungarian Grand Prix,Budapest,Hungary,2023-07-23
+2023,12,Belgian Grand Prix,Spa-Francorchamps,Belgium,2023-07-30
+2023,13,Dutch Grand Prix,Zandvoort,Netherlands,2023-08-27
+2023,14,Italian Grand Prix,Monza,Italy,2023-09-03
+2023,15,Singapore Grand Prix,Marina Bay,Singapore,2023-09-17
+2023,16,Japanese Grand Prix,Suzuka,Japan,2023-09-24
+2023,17,Qatar Grand Prix,Lusail,Qatar,2023-10-08
+2023,18,United States Grand Prix,Austin,United States,2023-10-22
+2023,19,Mexico City Grand Prix,Mexico City,Mexico,2023-10-29
+2023,20,São Paulo Grand Prix,São Paulo,Brazil,2023-11-05
+2023,21,Las Vegas Grand Prix,Las Vegas,United States,2023-11-18
+2023,22,Abu Dhabi Grand Prix,Yas Island,Abu Dhabi,2023-11-26
+2024,1,Bahrain Grand Prix,Sakhir,Bahrain,2024-03-02
+2024,2,Saudi Arabian Grand Prix,Jeddah,Saudi Arabia,2024-03-09
+2024,3,Australian Grand Prix,Melbourne,Australia,2024-03-24
+2024,4,Japanese Grand Prix,Suzuka,Japan,2024-04-07
+2024,5,Chinese Grand Prix,Shanghai,China,2024-04-21
+2024,6,Miami Grand Prix,Miami,United States,2024-05-05
+2024,7,Emilia Romagna Grand Prix,Imola,Italy,2024-05-19
+2024,8,Monaco Grand Prix,Monaco,Monaco,2024-05-26
+2024,9,Canadian Grand Prix,Montréal,Canada,2024-06-09
+2024,10,Spanish Grand Prix,Barcelona,Spain,2024-06-23
+2024,11,Austrian Grand Prix,Spielberg,Austria,2024-06-30
+2024,12,British Grand Prix,Silverstone,United Kingdom,2024-07-07
+2024,13,Hungarian Grand Prix,Budapest,Hungary,2024-07-21
+2024,14,Belgian Grand Prix,Spa-Francorchamps,Belgium,2024-07-28
+2024,15,Dutch Grand Prix,Zandvoort,Netherlands,2024-08-25
+2024,16,Italian Grand Prix,Monza,Italy,2024-09-01
+2024,17,Azerbaijan Grand Prix,Baku,Azerbaijan,2024-09-15
+2024,18,Singapore Grand Prix,Marina Bay,Singapore,2024-09-22
+2024,19,United States Grand Prix,Austin,United States,2024-10-20
+2024,20,Mexico City Grand Prix,Mexico City,Mexico,2024-10-27
+2024,21,São Paulo Grand Prix,São Paulo,Brazil,2024-11-03
+2024,22,Las Vegas Grand Prix,Las Vegas,United States,2024-11-23
+2024,23,Qatar Grand Prix,Lusail,Qatar,2024-12-01
+2024,24,Abu Dhabi Grand Prix,Yas Island,United Arab Emirates,2024-12-08
+2025,1,Australian Grand Prix,Melbourne,Australia,2025-03-16
+2025,2,Chinese Grand Prix,Shanghai,China,2025-03-23
+2025,3,Japanese Grand Prix,Suzuka,Japan,2025-04-06
+2025,4,Bahrain Grand Prix,Sakhir,Bahrain,2025-04-13
+2025,5,Saudi Arabian Grand Prix,Jeddah,Saudi Arabia,2025-04-20
+2025,6,Miami Grand Prix,Miami Gardens,United States,2025-05-04
+2025,7,Emilia Romagna Grand Prix,Imola,Italy,2025-05-18
+2025,8,Monaco Grand Prix,Monaco,Monaco,2025-05-25
+2025,9,Spanish Grand Prix,Barcelona,Spain,2025-06-01
+2025,10,Canadian Grand Prix,Montréal,Canada,2025-06-15
+2025,11,Austrian Grand Prix,Spielberg,Austria,2025-06-29
+2025,12,British Grand Prix,Silverstone,United Kingdom,2025-07-06
+2025,13,Belgian Grand Prix,Spa-Francorchamps,Belgium,2025-07-27
+2025,14,Hungarian Grand Prix,Budapest,Hungary,2025-08-03
+2025,15,Dutch Grand Prix,Zandvoort,Netherlands,2025-08-31
+2025,16,Italian Grand Prix,Monza,Italy,2025-09-07
+2025,17,Azerbaijan Grand Prix,Baku,Azerbaijan,2025-09-21
+2025,18,Singapore Grand Prix,Marina Bay,Singapore,2025-10-05
+2025,19,United States Grand Prix,Austin,United States,2025-10-19
+2025,20,Mexico City Grand Prix,Mexico City,Mexico,2025-10-26
+2025,21,São Paulo Grand Prix,São Paulo,Brazil,2025-11-09
+2025,22,Las Vegas Grand Prix,Las Vegas,United States,2025-11-22
+2025,23,Qatar Grand Prix,Lusail,Qatar,2025-11-30
+2025,24,Abu Dhabi Grand Prix,Yas Island,United Arab Emirates,2025-12-07
+2026,1,Australian Grand Prix,Melbourne,Australia,2026-03-08
+2026,2,Chinese Grand Prix,Shanghai,China,2026-03-15
+2026,3,Japanese Grand Prix,Suzuka,Japan,2026-03-29
+2026,4,Miami Grand Prix,Miami Gardens,United States,2026-05-03
+2026,5,Canadian Grand Prix,Montréal,Canada,2026-05-24
+2026,6,Monaco Grand Prix,Monte Carlo,Monaco,2026-06-07
+2026,7,Barcelona Grand Prix,Barcelona,Spain,2026-06-14
+2026,8,Austrian Grand Prix,Spielberg,Austria,2026-06-28
+2026,9,British Grand Prix,Silverstone,United Kingdom,2026-07-05
+2026,10,Belgian Grand Prix,Spa-Francorchamps,Belgium,2026-07-19
+2026,11,Hungarian Grand Prix,Budapest,Hungary,2026-07-26
+2026,12,Dutch Grand Prix,Zandvoort,Netherlands,2026-08-23
+2026,13,Italian Grand Prix,Monza,Italy,2026-09-06
+2026,14,Spanish Grand Prix,Madrid,Spain,2026-09-13
+2026,15,Azerbaijan Grand Prix,Baku,Azerbaijan,2026-09-26
+2026,16,Singapore Grand Prix,Marina Bay,Singapore,2026-10-11
+2026,17,United States Grand Prix,Austin,United States,2026-10-25
+2026,18,Mexico City Grand Prix,Mexico City,Mexico,2026-11-01
+2026,19,São Paulo Grand Prix,São Paulo,Brazil,2026-11-08
+2026,20,Las Vegas Grand Prix,Las Vegas,United States,2026-11-21
+2026,21,Qatar Grand Prix,Lusail,Qatar,2026-11-29
+2026,22,Abu Dhabi Grand Prix,Yas Marina,United Arab Emirates,2026-12-06

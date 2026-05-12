@@ -1,0 +1,41 @@
+{
+  "season": 2026,
+  "round": 4,
+  "wdc": {
+    "ANT": 100,
+    "RUS": 80,
+    "LEC": 59,
+    "NOR": 51,
+    "HAM": 51,
+    "PIA": 43,
+    "VER": 26,
+    "BEA": 17,
+    "GAS": 16,
+    "LAW": 10,
+    "COL": 7,
+    "LIN": 4,
+    "HAD": 4,
+    "SAI": 4,
+    "BOR": 2,
+    "OCO": 1,
+    "ALB": 1,
+    "HUL": 0,
+    "BOT": 0,
+    "PER": 0,
+    "ALO": 0,
+    "STR": 0
+  },
+  "wcc": {
+    "Mercedes": 180,
+    "Ferrari": 110,
+    "McLaren": 94,
+    "Red Bull": 30,
+    "Alpine F1 Team": 23,
+    "Haas F1 Team": 18,
+    "RB F1 Team": 14,
+    "Williams": 5,
+    "Audi": 2,
+    "Aston Martin": 0,
+    "Cadillac": 0
+  }
+}
